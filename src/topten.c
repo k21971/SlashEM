@@ -69,6 +69,10 @@ STATIC_DCL void NDECL(outheader);
 STATIC_DCL void FDECL(outentry, (int,struct toptenentry *,BOOLEAN_P));
 STATIC_DCL void FDECL(readentry, (FILE *,struct toptenentry *));
 STATIC_DCL void FDECL(writeentry, (FILE *,struct toptenentry *));
+#ifdef XLOGFILE
+STATIC_DCL void FDECL(munge_xlstring, (char *dest, char *src, int n));
+STATIC_DCL void FDECL(write_xlentry, (FILE *,struct toptenentry *));
+#endif
 STATIC_DCL void FDECL(free_ttlist, (struct toptenentry *));
 STATIC_DCL int FDECL(classmon, (char *,BOOLEAN_P));
 STATIC_DCL int FDECL(score_wanted,
@@ -76,6 +80,10 @@ STATIC_DCL int FDECL(score_wanted,
 #ifdef RECORD_CONDUCT
 STATIC_DCL long FDECL(encodeconduct, (void));
 #endif
+#ifdef RECORD_ACHIEVE
+STATIC_DCL long FDECL(encodeachieve, (void));
+#endif
+STATIC_DCL long FDECL(encode_xlogflags, (void));
 #ifdef NO_SCAN_BRACK
 STATIC_DCL void FDECL(nsb_mung_line,(char*));
 STATIC_DCL void FDECL(nsb_unmung_line,(char*));
@@ -90,6 +98,10 @@ NEARDATA const char * const killed_by_prefix[] = {
 };
 
 static winid toptenwin = WIN_ERR;
+
+#ifdef RECORD_START_END_TIME
+static time_t deathtime = 0L;
+#endif
 
 STATIC_OVL void
 topten_print(x)
@@ -128,29 +140,6 @@ d_level *lev;
 #endif
 	    return depth(lev);
 }
-
-#ifdef RECORD_CONDUCT
-long
-encodeconduct(void)
-{
-       long e = 0L;
-
-       if(u.uconduct.unvegetarian)    e |= 0x1L;
-       if(u.uconduct.unvegan)         e |= 0x2L;
-       if(u.uconduct.food)            e |= 0x4L;
-       if(u.uconduct.gnostic)         e |= 0x8L;
-       if(u.uconduct.weaphit)         e |= 0x10L;
-       if(u.uconduct.killer)          e |= 0x20L;
-       if(u.uconduct.literate)        e |= 0x40L;
-       if(u.uconduct.polypiles)       e |= 0x80L;
-       if(u.uconduct.polyselfs)       e |= 0x100L;
-       if(u.uconduct.wishes)          e |= 0x200L;
-       if(u.uconduct.wisharti)        e |= 0x400L;
-       if(num_genocides())            e |= 0x800L;
-
-       return e;
-}
-#endif
 
 STATIC_OVL void
 readentry(rfile,tt)
@@ -220,7 +209,7 @@ struct toptenentry *tt;
 			for(dp = tt->death; *dp; dp++) {
 				if(!strncmp(dp, " Conduct=", 9)) {
 					dp2 = dp + 9;
-					sscanf(dp2, "%d", &tt->conduct);
+					sscanf(dp2, "%ld", &tt->conduct);
 					/* Find trailing null or space */
 					while(*dp2 && *dp2 != ' ')
 						dp2++;
@@ -260,7 +249,7 @@ struct toptenentry *tt;
 	char *cp = eos(tt->death);
 
 	/* Add a trailing " Conduct=%d" to tt->death */
-	Sprintf(cp, " Conduct=%d", tt->conduct);
+	Sprintf(cp, " Conduct=%ld", tt->conduct);
 #endif
 
 #ifdef NO_SCAN_BRACK
@@ -303,6 +292,258 @@ struct toptenentry *tt;
 #endif
 }
 
+#ifdef XLOGFILE
+#define SEP ":"
+#define SEPC ':'
+
+/* copy a maximum of n-1 characters from src to dest, changing ':' and '\n'
+ * to '_'; always null-terminate. */
+STATIC_OVL void
+munge_xlstring(dest, src, n)
+char *dest;
+char *src;
+int n;
+{
+  int i;
+
+  for(i = 0; i < (n - 1) && src[i] != '\0'; i++) {
+    if(src[i] == SEPC || src[i] == '\n')
+      dest[i] = '_';
+    else
+      dest[i] = src[i];
+  }
+
+  dest[i] = '\0';
+
+  return;
+}
+
+STATIC_OVL unsigned long
+encode_uevent()
+{
+  unsigned long c = 0UL;
+
+  /* game plot events */
+  if (u.uevent.minor_oracle ||
+      u.uevent.major_oracle)        c |= 0x00001UL; /* any Oracle consultation */
+  if (u.uevent.qcalled)             c |= 0x00002UL; /* reached quest portal level */
+  if (quest_status.got_quest ||
+      quest_status.got_thanks)      c |= 0x00004UL; /* was accepted for quest */
+  if (u.uevent.qcompleted)          c |= 0x00008UL; /* showed quest arti to leader */
+  if (u.uevent.uopened_dbridge)     c |= 0x00010UL; /* opened/destroyed Castle drawbridge */
+  if (u.uevent.gehennom_entered)    c |= 0x00020UL; /* entered Gehennom the front way */
+  if (u.uevent.udemigod)            c |= 0x00040UL; /* provoked Rodney's wrath */
+  if (u.uevent.invoked)             c |= 0x00080UL; /* did the invocation */
+  if (u.uevent.ascended)            c |= 0x00100UL; /* someone needs to use this variable */
+
+  /* notable other events */
+#ifdef ELBERETH
+  if (u.uevent.uhand_of_elbereth)   c |= 0x00200UL; /* was crowned */
+#endif
+
+  /* boss kills */
+  if (quest_status.killed_nemesis)  c |= 0x00400UL; /* defeated quest nemesis */
+  if (mvitals[PM_CROESUS].died)     c |= 0x00800UL; /* defeated Croesus */
+  if (mvitals[PM_MEDUSA].died)      c |= 0x01000UL; /* defeated Medusa */
+  if (mvitals[PM_VLAD_THE_IMPALER].
+      died)                         c |= 0x02000UL; /* defeated Vlad */
+  if (mvitals[PM_WIZARD_OF_YENDOR].
+      died)                         c |= 0x04000UL; /* defeated Rodney */
+  if (mvitals[PM_HIGH_PRIEST].died) c |= 0x08000UL; /* defeated a high priest */
+  if (mvitals[PM_BLACK_MARKETEER].
+      died)                         c |= 0x10000UL; /* defeated One-eyed Sam */
+  if (mvitals[PM_CTHULHU].died)     c |= 0x20000UL; /* defeated Cthulhu */
+
+  return c;
+}
+
+STATIC_OVL unsigned long
+encode_carried()
+{
+  unsigned long c = 0UL;
+
+  /* this encodes important items potentially owned by the player at the
+     time of death */
+  if (u.uhave.amulet)   c |= 0x0001UL; /* real Amulet of Yendor */
+  if (u.uhave.bell)     c |= 0x0002UL; /* Bell of Opening */
+  if (u.uhave.book)     c |= 0x0004UL; /* Book of the Dead */
+  if (u.uhave.menorah)  c |= 0x0008UL; /* Candelabrum of Invocation */
+  if (u.uhave.questart) c |= 0x0010UL; /* own quest artifact */
+
+  return c;
+}
+
+STATIC_OVL void
+rite_xlentry(rfile,tt)
+FILE *rfile;
+struct toptenentry *tt;
+{
+
+  char buf[DTHSZ+1];
+
+  /* Log all of the data found in the regular logfile */
+  (void)fprintf(rfile,
+                "version=%d.%d.%d"
+                SEP "points=%ld"
+                SEP "deathdnum=%d"
+                SEP "deathlev=%d"
+                SEP "maxlvl=%d"
+                SEP "hp=%d"
+                SEP "maxhp=%d"
+                SEP "deaths=%d"
+                SEP "deathdate=%ld"
+                SEP "birthdate=%ld"
+                SEP "uid=%d",
+                tt->ver_major, tt->ver_minor, tt->patchlevel,
+                tt->points, tt->deathdnum, tt->deathlev,
+                tt->maxlvl, tt->hp, tt->maxhp, tt->deaths,
+                tt->deathdate, tt->birthdate, tt->uid);
+
+  (void)fprintf(rfile,
+                SEP "role=%s"
+                SEP "race=%s"
+                SEP "gender=%s"
+                SEP "align=%s",
+                tt->plrole, tt->plrace, tt->plgend, tt->plalign);
+   
+   munge_xlstring(buf, plname, DTHSZ + 1);
+  (void)fprintf(rfile, SEP "name=%s", buf);
+
+   munge_xlstring(buf, tt->death, DTHSZ + 1);
+  (void)fprintf(rfile, SEP "death=%s", buf);
+
+#ifdef RECORD_CONDUCT
+  (void)fprintf(rfile, SEP "conduct=0x%lx", encodeconduct());
+#endif
+
+#ifdef RECORD_TURNS
+  (void)fprintf(rfile, SEP "turns=%ld", moves);
+#endif
+
+#ifdef RECORD_ACHIEVE
+  (void)fprintf(rfile, SEP "achieve=0x%lx", encodeachieve());
+#endif
+
+#ifdef RECORD_REALTIME
+  (void)fprintf(rfile, SEP "realtime=%ld", (long)realtime_data.realtime);
+#endif
+
+#ifdef RECORD_START_END_TIME
+  (void)fprintf(rfile, SEP "starttime=%ld", (long)u.ubirthday);
+  (void)fprintf(rfile, SEP "endtime=%ld", (long)deathtime);
+#endif
+
+#ifdef RECORD_GENDER0
+  (void)fprintf(rfile, SEP "gender0=%s", genders[flags.initgend].filecode);
+#endif
+
+#ifdef RECORD_ALIGN0
+  (void)fprintf(rfile, SEP "align0=%s", 
+          aligns[1 - u.ualignbase[A_ORIGINAL]].filecode);
+#endif
+
+  (void)fprintf(rfile, "\n");
+
+}
+
+STATIC_OVL void
+write_xlentry(rfile,tt)
+FILE *rfile;
+struct toptenentry *tt;
+{
+  s_level *lev = Is_special(&u.uz);
+  char buf[DTHSZ+1];
+
+  /* Log all of the data found in the regular logfile */
+  (void)fprintf(rfile,
+                "version=%d.%d.%d"
+                SEP "points=%ld"
+                SEP "deathdnum=%d"
+                SEP "deathdname=%s"
+                SEP "deathlev=%d"
+                SEP "maxlvl=%d"
+                SEP "dlev_name=%s"
+                SEP "hp=%d"
+                SEP "maxhp=%d"
+                SEP "deaths=%d"
+                SEP "deathdate=%ld"
+                SEP "birthdate=%ld"
+                SEP "uid=%d",
+                tt->ver_major, tt->ver_minor, tt->patchlevel,
+                tt->points, tt->deathdnum, dungeons[tt->deathdnum].dname, tt->deathlev,
+                tt->maxlvl,
+                lev ? lev->proto : "", /* proto level name if special level */
+                tt->hp, tt->maxhp, tt->deaths,
+                tt->deathdate, tt->birthdate, tt->uid);
+
+  (void)fprintf(rfile,
+                SEP "role=%s"
+                SEP "race=%s"
+                SEP "gender=%s"
+                SEP "align=%s",
+                tt->plrole, tt->plrace, tt->plgend, tt->plalign);
+
+   munge_xlstring(buf, plname, DTHSZ + 1);
+  (void)fprintf(rfile, SEP "name=%s", buf);
+
+   munge_xlstring(buf, tt->death, DTHSZ + 1);
+  (void)fprintf(rfile, SEP "death=%s", buf);
+
+  (void)fprintf(rfile, SEP "flags=0x%lx", encode_xlogflags());
+
+#ifdef RECORD_CONDUCT
+  (void)fprintf(rfile, SEP "conduct=0x%lx", encodeconduct());
+#endif
+
+#ifdef RECORD_TURNS
+  (void)fprintf(rfile, SEP "turns=%ld", moves);
+#endif
+
+#ifdef RECORD_ACHIEVE
+  (void)fprintf(rfile, SEP "achieve=0x%lx", encodeachieve());
+#endif
+
+  (void)fprintf(rfile, SEP "event=%ld", encode_uevent());
+  (void)fprintf(rfile, SEP "carried=%ld", encode_carried());
+
+#ifdef RECORD_REALTIME
+  (void)fprintf(rfile, SEP "realtime=%ld", (long)realtime_data.realtime);
+#endif
+
+#ifdef RECORD_START_END_TIME
+  (void)fprintf(rfile, SEP "starttime=%ld", (long)u.ubirthday);
+  (void)fprintf(rfile, SEP "endtime=%ld", deathtime);
+#endif
+
+#ifdef RECORD_GENDER0
+  (void)fprintf(rfile, SEP "gender0=%s", genders[flags.initgend].filecode);
+#endif
+
+#ifdef RECORD_ALIGN0
+  (void)fprintf(rfile, SEP "align0=%s", 
+          aligns[1 - u.ualignbase[A_ORIGINAL]].filecode);
+#endif
+
+  (void)fprintf(rfile, SEP "xplevel=%d", u.ulevel); /* XP level */
+  (void)fprintf(rfile, SEP "exp=%ld", (long)u.uexp); /* Experience points */
+
+  (void)fprintf(rfile, SEP "mode=%s", (flags.debug ? "debug" :
+                                       flags.explore ? "explore" :
+                                       "normal"));
+#ifndef GOLDOBJ
+  (void)fprintf(rfile, SEP "gold=%ld", u.ugold); /* hidden_gold() is not needed anymore */
+#else
+  (void)fprintf(rfile, SEP "gold=%ld", money_cnt(invent));
+#endif
+
+  (void)fprintf(rfile, "\n");
+
+}
+
+#undef SEP
+#undef SEPC
+#endif /* XLOGFILE */
+
 STATIC_OVL void
 free_ttlist(tt)
 struct toptenentry *tt;
@@ -332,6 +573,9 @@ int how;
 #ifdef LOGFILE
 	FILE *lfile;
 #endif /* LOGFILE */
+#ifdef XLOGFILE
+	FILE *xlfile;
+#endif /* XLOGFILE */
 
 /* Under DICE 3.0, this crashes the system consistently, apparently due to
  * corruption of *rfile somewhere.  Until I figure this out, just cut out
@@ -409,7 +653,22 @@ int how;
 			break;
 	}
 	t0->birthdate = yyyymmdd(u.ubirthday);
+
+#ifdef RECORD_START_END_TIME
+  /* Make sure that deathdate and deathtime refer to the same time; it
+   * wouldn't be good to have deathtime refer to the day after deathdate. */
+
+#if defined(BSD) && !defined(POSIX_TYPES)
+        (void) time((long *)&deathtime);
+#else
+        (void) time(&deathtime);
+#endif
+
+        t0->deathdate = yyyymmdd(deathtime);
+#else
 	t0->deathdate = yyyymmdd((time_t)0L);
+#endif /* RECORD_START_END_TIME */
+
 #ifdef RECORD_CONDUCT
 	t0->conduct = encodeconduct();
 #endif
@@ -433,6 +692,22 @@ int how;
 	    unlock_file_area(LOGAREA, LOGFILE);
 	}
 #endif /* LOGFILE */
+
+#ifdef XLOGFILE
+#ifdef FILE_AREAS
+         if(lock_file_area(LOGAREA, XLOGFILE, 10)) {
+#else
+         if(lock_file(XLOGFILE, SCOREPREFIX, 10)) {
+#endif
+             if(!(xlfile = fopen_datafile(XLOGFILE, "a", SCOREPREFIX))) {
+                  HUP raw_print("Cannot open extended log file!");
+             } else {
+                  write_xlentry(xlfile, t0);
+                  (void) fclose(xlfile);
+             }
+             unlock_file(XLOGFILE);
+         }
+#endif /* XLOGFILE */
 
 	if (wizard || discover) {
 	    if (how != PANICKED) HUP {
@@ -903,6 +1178,84 @@ int uid;
 	}
 	return 0;
 }
+
+long
+encode_xlogflags(void)
+{
+	long e = 0L;
+
+	if (wizard)              e |= 0x001L; /* wizard mode */
+	if (discover)            e |= 0x002L; /* explore mode */
+	if (killer_flags & 0x1)  e |= 0x004L; /* died, (with the Amulet) */
+	if (killer_flags & 0x2)  e |= 0x008L; /* died, (in celestial disgrace) */
+	if (killer_flags & 0x4)  e |= 0x010L; /* died, (with a fake Amulet) */
+
+	return e;
+}
+
+#ifdef RECORD_CONDUCT
+long
+encodeconduct(void)
+{
+       long e = 0L;
+
+       if(!u.uconduct.food)            e |= 0x001L;
+       if(!u.uconduct.unvegan)         e |= 0x002L;
+       if(!u.uconduct.unvegetarian)    e |= 0x004L;
+       if(!u.uconduct.gnostic)         e |= 0x008L;
+       if(!u.uconduct.weaphit)         e |= 0x010L;
+       if(!u.uconduct.killer)          e |= 0x020L;
+       if(!u.uconduct.literate)        e |= 0x040L;
+       if(!u.uconduct.polypiles)       e |= 0x080L;
+       if(!u.uconduct.polyselfs)       e |= 0x100L;
+       if(!u.uconduct.wishes)          e |= 0x200L;
+       if(!u.uconduct.wisharti)        e |= 0x400L;
+       if(!num_genocides())            e |= 0x800L;
+
+       return e;
+}
+#endif
+
+#ifdef RECORD_ACHIEVE
+long
+encodeachieve(void)
+{
+  /* Achievement bitfield:
+   * bit  meaning
+   *  0   obtained the Bell of Opening
+   *  1   entered gehennom (by any means)
+   *  2   obtained the Candelabrum of Invocation
+   *  3   obtained the Book of the Dead
+   *  4   performed the invocation ritual
+   *  5   obtained the amulet
+   *  6   entered elemental planes
+   *  7   entered astral plane
+   *  8   ascended (not "escaped in celestial disgrace!")
+   *  9   obtained the luckstone from the Mines
+   *  10  obtained the sokoban prize
+   *  11  killed medusa
+   */
+
+  long r;
+
+  r = 0;
+
+  if(achieve.get_bell)           r |= 1L << 0;
+  if(achieve.enter_gehennom)     r |= 1L << 1;
+  if(achieve.get_candelabrum)    r |= 1L << 2;
+  if(achieve.get_book)           r |= 1L << 3;
+  if(achieve.perform_invocation) r |= 1L << 4;
+  if(achieve.get_amulet)         r |= 1L << 5;
+  if(In_endgame(&u.uz))          r |= 1L << 6;
+  if(Is_astralevel(&u.uz))       r |= 1L << 7;
+  if(achieve.ascended)           r |= 1L << 8;
+  if(achieve.get_luckstone)      r |= 1L << 9;
+  if(achieve.finish_sokoban)     r |= 1L << 10;
+  if(achieve.killed_medusa)      r |= 1L << 11;
+
+  return r;
+}
+#endif
 
 /*
  * print selected parts of score list.

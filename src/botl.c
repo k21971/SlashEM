@@ -399,6 +399,14 @@ bot2str(char *newbot2)
         }
 #endif
 	        
+#ifdef REALTIME_ON_BOTL
+  if(iflags.showrealtime) {
+    time_t currenttime = get_realtime();
+    Sprintf(nb = eos(nb), " %ld:%2.2ld", currenttime / 3600, 
+                                       (currenttime % 3600) / 60);
+  }
+#endif
+	        
         if (bot2_abbrev >= 2) {
 		if (hu_abbrev_stat[u.uhs][0]!='\0') {
 			Sprintf(nb = eos(nb), " ");

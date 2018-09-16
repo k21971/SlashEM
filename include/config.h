@@ -26,11 +26,11 @@
 #define UNIX		/* delete if no fork(), exec() available */
 
 /* #define MSDOS */	/* in case it's not auto-detected */
-  
+
 /* #define OS2 */	/* in case it's not auto-detected */
-  
+
 /* #define TOS */	/* define for Atari ST/TT */
-  
+
 /* #define STUPID */	/* avoid some complicated expressions if
   			   your C compiler chokes on them */
 /* #define MINIMAL_TERM */
@@ -43,9 +43,9 @@
   			 * if you get compiler errors, don't define this. */
   			/* Hint: if you're not developing code, don't define
   			   ULTRIX_PROTO. */
-  
+
 #include "config1.h"	/* should auto-detect MSDOS, MAC, AMIGA, WIN32 and OS2 */
-  
+
 /* Windowing systems...
  * Define all of those you want supported in your binary.
  * Some combinations make no sense.  See the installation document.
@@ -200,6 +200,7 @@
 #endif
 
 #define LOGFILE "logfile"	/* larger file for debugging purposes */
+#define XLOGFILE "xlogfile" /* even larger logfile */
 #define LOGAREA FILE_AREA_VAR
 #define NEWS "news"		/* the file containing the latest hack news */
 #define NEWS_AREA FILE_AREA_SHARE
@@ -467,6 +468,26 @@ typedef unsigned char	uchar;
 /* #define SHOUT */ /* JRN -- shouting and petcommands - not implemented */
 
 #define DISPLAY_LAYERS	/* Improved support for transparent tile sets - ALI */
+
+/* #define REALTIME_ON_BOTL */  /* Show elapsed time on bottom line.  Note:
+                                 * this breaks savefile compatibility. */
+
+/* The options in this section require the extended logfile support */
+#ifdef XLOGFILE
+#define RECORD_CONDUCT  /* Record conducts kept in logfile */
+#define RECORD_TURNS    /* Record turns elapsed in logfile */
+#define RECORD_ACHIEVE  /* Record certain notable achievements in the
+                         * logfile.  Note: this breaks savefile compatibility
+                         * due to the addition of the u_achieve struct. */
+#define RECORD_REALTIME /* Record the amount of actual playing time (in
+                         * seconds) in the record file.  Note: this breaks
+                         * savefile compatibility. */
+#define RECORD_START_END_TIME /* Record to-the-second starting and ending
+                               * times; stored as 32-bit values obtained
+                               * from time(2) (seconds since the Epoch.) */
+#define RECORD_GENDER0   /* Record initial gender in logfile */
+#define RECORD_ALIGN0   /* Record initial alignment in logfile */
+#endif
 
 /*
  * Section 5:  EXPERIMENTAL STUFF

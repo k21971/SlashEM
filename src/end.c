@@ -776,6 +776,12 @@ die:
 	   it's gone prior to inventory disclosure and creation of bones data */
 	inven_inuse(TRUE);
 
+#ifdef RECORD_REALTIME
+        /* Update the realtime counter to reflect the playtime of the current
+         * game. */
+        realtime_data.realtime = get_realtime();
+#endif /* RECORD_REALTIME */
+
 	/* Sometimes you die on the first move.  Life's not fair.
 	 * On those rare occasions you get hosed immediately, go out
 	 * smiling... :-)  -3.
@@ -924,13 +930,18 @@ die:
 /* changing kilbuf really changes killer. we do it this way because
    killer is declared a (const char *)
 */
-	if (u.uhave.amulet) Strcat(kilbuf, " (with the Amulet)");
-	else if (how == ESCAPED) {
-	    if (Is_astralevel(&u.uz))	/* offered Amulet to wrong deity */
+	if (u.uhave.amulet) {
+		Strcat(kilbuf, " (with the Amulet)");
+		killer_flags |= 0x1;
+	} else if (how == ESCAPED) {
+	    if (Is_astralevel(&u.uz)) {	/* offered Amulet to wrong deity */
 		Strcat(kilbuf, " (in celestial disgrace)");
-	    else if (carrying(FAKE_AMULET_OF_YENDOR))
+		killer_flags |= 0x2;
+	    } else if (carrying(FAKE_AMULET_OF_YENDOR)) {
 		Strcat(kilbuf, " (with a fake Amulet)");
+		killer_flags |= 0x4;
 		/* don't bother counting to see whether it should be plural */
+	}
 	}
 
 	    Sprintf(pbuf, "%s %s the %s...", Goodbye(), plname,

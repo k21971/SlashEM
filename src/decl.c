@@ -55,6 +55,7 @@ const char *delayed_killer = 0;
 NEARDATA long done_money = 0;
 #endif
 char killer_buf[BUFSZ] = DUMMY;
+long killer_flags = 0L;
 const char *nomovemsg = 0;
 const char nul[40] = DUMMY;			/* contains zeros */
 NEARDATA char plname[PL_NSIZ] = DUMMY;		/* player name */
@@ -333,6 +334,14 @@ char *fqn_prefix[PREFIX_COUNT] = { (char *)0, (char *)0, (char *)0, (char *)0,
 char *fqn_prefix_names[PREFIX_COUNT] = { "hackdir", "leveldir", "savedir",
 					"bonesdir", "datadir", "scoredir",
 					"lockdir", "configdir", "troubledir" };
+#endif
+
+#ifdef RECORD_ACHIEVE
+struct u_achieve achieve = DUMMY;
+#endif
+
+#if defined(RECORD_REALTIME) || defined(REALTIME_ON_BOTL)
+struct realtime_data realtime_data = { 0, 0, 0 };
 #endif
 
 /* dummy routine used to force linkage */
