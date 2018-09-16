@@ -517,7 +517,10 @@ register struct obj *obj;
 		hobj->quan = obj->quan;
 		/* WAC clean up */
 		buf = xname2(hobj);
-		obj_extract_self(hobj);                
+		/* fix a VERY aggravating bug that could corrupt saves with obj_is_local and timer errors --Amy */
+		     if (Has_contents(hobj))
+		          delete_contents(hobj);
+		obj_extract_self(hobj);
 		dealloc_obj(hobj);
 
 		return (buf);
