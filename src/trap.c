@@ -2802,7 +2802,8 @@ xchar x, y;
     return retval;
 }
 
-void
+/* returns TRUE if obj is destroyed */
+boolean
 water_damage(obj, force, here)
 register struct obj *obj;
 register boolean force, here;
@@ -2810,6 +2811,8 @@ register boolean force, here;
 	/* Dips in the Lethe are a very poor idea */
 	int luckpenalty = level.flags.lethe? 7 : 0;
 	struct obj *otmp;
+	struct obj *obj_original = obj;
+	boolean obj_destroyed = FALSE;
 
 	/* Scrolls, spellbooks, potions, weapons and
 	   pieces of armor may get affected by the water */
@@ -2871,6 +2874,7 @@ register boolean force, here;
 				/* damage player/monster? */
 				pline("A potion explodes!");
 				delobj(obj);
+				obj_destroyed = (obj == obj_original);
 				continue;
 			} else
 			/* Potions turn to water or amnesia... */
@@ -2965,8 +2969,10 @@ register boolean force, here;
 					&& obj->oerodeproof && !rn2(5))
 			    obj->oerodeproof = FALSE;
 		    }
+		obj_destroyed = FALSE;
 		}
 	}
+	return obj_destroyed;
 }
 
 /*
