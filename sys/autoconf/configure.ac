@@ -349,7 +349,7 @@ NETHACK_ARG(dungeon-growth,[Dungeon growth],DUNGEON_GROWTH,yes)
 NETHACK_ARG(display-layers,[Support transparent tilesets],DISPLAY_LAYERS,yes)
 NETHACK_ARG(goldobj,[Gold is kept on object chains (experimental)],GOLDOBJ,no)
 NETHACK_ARG(autopickup-exceptions,[Exceptions to autopickup (experimental)],
-  AUTOPICKUP_EXCEPTIONS,no)
+  AUTOPICKUP_EXCEPTIONS,yes)
 
 AC_MSG_CHECKING([whether to enable wizmode])
 AC_ARG_ENABLE([wizmode], AC_HELP_STRING([--enable-wizmode=USER],

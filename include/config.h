@@ -220,8 +220,8 @@
 
 #ifdef UNIX
 /* path and file name extension for compression program */
-# define COMPRESS "/usr/bin/compress" /* Lempel-Ziv compression */
-# define COMPRESS_EXTENSION ".Z"	     /* compress's extension */
+# define COMPRESS "/bin/gzip" /* Lempel-Ziv compression */
+# define COMPRESS_EXTENSION ".gz"	     /* compress's extension */
 
 /* An example of one alternative you might want to use: */
 /* # define COMPRESS "/usr/local/bin/gzip" */   /* FSF gzip compression */
@@ -239,7 +239,7 @@
  *	a tar-like file, thus making a neater installation.  See *conf.h
  *	for detailed configuration.
  */
-/* #define DLB */             /* not supported on all platforms */
+#define DLB             /* not supported on all platforms */
 
 /*
  *	Defining INSURANCE slows down level changes, but allows games that
@@ -261,7 +261,7 @@
 #  ifdef __APPLE__
 #    define HACKDIR "nethackdir"      /* nethack directory */
 #  else
-#    define HACKDIR "."
+#    define HACKDIR "/slashem-0.0.8E0F2"
 #  endif
 # endif
 
@@ -477,7 +477,7 @@ typedef unsigned char	uchar;
  */
 
 /*#define GOLDOBJ */	/* Gold is kept on obj chains - Helge Hafting */
-/*#define AUTOPICKUP_EXCEPTIONS */ /* exceptions to autopickup */
+#define AUTOPICKUP_EXCEPTIONS /* exceptions to autopickup */
 
 /* End of Section 5 */
 
