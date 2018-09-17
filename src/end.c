@@ -14,6 +14,7 @@
 #ifdef UNIX
 #ifdef DUMP_LOG
 #include <sys/stat.h>
+#include <sys/types.h>
 #endif
 #endif
 
@@ -21,7 +22,7 @@
 #define FIRST_GEM    DILITHIUM_CRYSTAL
 #define FIRST_AMULET AMULET_OF_ESP
 #define LAST_AMULET  AMULET_OF_YENDOR
- 
+
 struct valuable_data { long count; int typ; };
 
 static struct valuable_data
