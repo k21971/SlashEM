@@ -41,6 +41,8 @@ STATIC_DCL void FDECL(artifact_score, (struct obj *,BOOLEAN_P,winid));
 STATIC_DCL void FDECL(savelife, (int));
 STATIC_DCL boolean FDECL(list_vanquished, (CHAR_P, BOOLEAN_P));
 #ifdef DUMP_LOG
+extern char msgs[][BUFSZ];
+extern int lastmsg;
 extern void NDECL(dump_spells);
 void FDECL(do_vanquished, (int, BOOLEAN_P, BOOLEAN_P));
 STATIC_DCL void FDECL(list_genocided, (int, BOOLEAN_P, BOOLEAN_P));
@@ -98,6 +100,7 @@ void
 dump_init ()
 {
   if (dump_fn[0]) {
+    char *actual_fn = dump_fn;
     char *p = (char *) strstr(dump_fn, "%n");
     if (p) {
       int new_dump_fn_len = strlen(dump_fn)+strlen(plname)-2; /* %n */
@@ -112,21 +115,31 @@ dump_init ()
       p += 2;	/* skip "%n" */
       strncpy(q, p, strlen(p));
       new_dump_fn[new_dump_fn_len] = '\0';
+      actual_fn = new_dump_fn;
+    }
+    p = (char*) strstr(actual_fn, "%d");
+    if (p) {
+      int new_len = strlen(actual_fn) + 13; /* date length - "%d" + 1 */
+      char *new_dump_fn = (char *) alloc((unsigned)(new_len));
+      char *q = new_dump_fn;
+      struct tm *lt = getlt();
+      long t = (long)lt->tm_hour * 10000L + (long)lt->tm_min * 100L + (long)lt->tm_sec;
+      strncpy(q, actual_fn, p - actual_fn);
+      q += p - actual_fn;
+      sprintf(q, "%ld%06ld", yyyymmdd(0), t);
+      q += 14;
+      p += 2; /* skip "%d" */
+      strncpy(q, p, strlen(p));
+      q[strlen(p)]='\0';
+      if (actual_fn != dump_fn) free(actual_fn);
+      actual_fn = new_dump_fn;
+    }
+    dump_fp = fopen (actual_fn, "w");
+    if (actual_fn != dump_fn) free(actual_fn);
 
-      dump_fp = fopen(new_dump_fn, "w");
-      if (!dump_fp) {
-	pline("Can't open %s for output.", new_dump_fn);
-	pline("Dump file not created.");
-      }
-      free(new_dump_fn);
-
-    } else {
-      dump_fp = fopen (dump_fn, "w");
-
-      if (!dump_fp) {
-	pline("Can't open %s for output.", dump_fn);
-	pline("Dump file not created.");
-      }
+    if (!dump_fp) {
+      pline("Can't open %s for output.", dump_fn);
+      pline("Dump file not created.");
     }
   }
 }
@@ -448,7 +461,13 @@ boolean taken;
 	    ask = should_query_disclose_option('i', &defquery);
 	    if (!done_stopprint) {
 		c = ask ? yn_function(qbuf, ynqchars, defquery) : defquery;
-		if (c == 'y') {
+		} else {
+		c = 'n';
+		}
+		{
+#ifdef DUMP_LOG
+	   boolean want_disp = (c = 'y')? TRUE: FALSE;
+#endif
 			struct obj *obj;
 
 			if (Hallucination) {
@@ -460,17 +479,19 @@ boolean taken;
 			    obj->known = obj->bknown = obj->dknown = obj->rknown = 1;
 			}
 #ifdef DUMP_LOG
-			(void) dump_inventory((char *)0, TRUE);
-			do_containerconts(invent, TRUE, TRUE, TRUE);
+			(void) dump_inventory((char *)0, TRUE, want_disp);
+			do_containerconts(invent, TRUE, TRUE, TRUE, want_disp);
 #else
+			if (c == 'y') {
 			(void) display_inventory((char *)0, TRUE);
 			container_contents(invent, TRUE, TRUE);
+		}
 #endif /* DUMP_LOG */
 		}
 		if (c == 'q')  done_stopprint++;
 	    }
-	}
-	if (hallu) make_hallucinated(20L, FALSE, 0L);
+	/* }
+	if (hallu) make_hallucinated(20L, FALSE, 0L); */
 
 	ask = should_query_disclose_option('a', &defquery);
 	if (!done_stopprint) {
@@ -639,7 +660,9 @@ winid endwin;
 #ifdef DUMP_LOG
 		if (dump_fp)
 		  dump("", pbuf);
+		if (endwin != WIN_ERR)
 #endif
+ 		putstr(endwin, 0, pbuf);
 	    }
 	}
 	if (Has_contents(otmp))
@@ -658,6 +681,7 @@ int how;
 	boolean bones_ok, have_windows = iflags.window_inited;
 	struct obj *corpse = (struct obj *)0;
 	long umoney;
+	int i;
 
 	if (how == TRICKED) {
 	    if (killer) {
@@ -765,6 +789,20 @@ die:
 		  (flags.female && urole.name.f)?
 		   urole.name.f : urole.name.m);
 	  dump("", pbuf);
+# ifdef DUMPMSGS
+	  if (lastmsg >= 0) {
+		dump ("", "Latest messages");
+		for (i = lastmsg + 1; i < DUMPMSGS; i++) {
+		  if (msgs[i] && strcmp(msgs[i], "") )
+		    dump ("  ", msgs[i]);
+		} 
+		for (i = 0; i <= lastmsg; i++) {
+		  if (msgs[i] && strcmp(msgs[i], "") )
+		    dump ("  ", msgs[i]);
+		} 
+		dump ("","");
+	  }
+#  endif /* DUMPMSGS */
 	  /* D: Add a line for clearance from the screen dump */
 	  dump("", "");
 	  dump_screen();
@@ -860,8 +898,9 @@ die:
 
 	if (have_windows) display_nhwindow(WIN_MESSAGE, FALSE);
 
-	if (strcmp(flags.end_disclose, "none") && how != PANICKED)
+	if (strcmp(flags.end_disclose, "none") && how != PANICKED) {
 		disclose(how, taken);
+	}
 	/* finish_paybill should be called after disclosure but before bones */
 	if (bones_ok && taken) finish_paybill();
 
@@ -1012,6 +1051,10 @@ die:
 	    if (!done_stopprint)
 		artifact_score(invent, FALSE, endwin);	/* list artifacts */
 
+#ifdef DUMP_LOG
+	else
+	artifact_score(invent, FALSE, WIN_ERR);
+#endif
 	    /* list valuables here */
 	    for (val = valuables; val->list; val++) {
 		sort_valuables(val->list, val->size);
@@ -1043,7 +1086,7 @@ die:
 		}
 	    }
 
-	} else if (!done_stopprint) {
+	} else {
 	    /* did not escape or ascend */
 	    if (u.uz.dnum == 0 && u.uz.dlevel <= 0) {
 		/* level teleported out of the dungeon; `how' is DIED,
@@ -1063,16 +1106,15 @@ die:
 
 	    Sprintf(eos(pbuf), " with %ld point%s,",
 		    u.urexp, plur(u.urexp));
-	    putstr(endwin, 0, pbuf);
+		if (!done_stopprint) putstr(endwin, 0, pbuf);
 #ifdef DUMP_LOG
 	    if (dump_fp) dump("", pbuf);
 #endif
 	}
 
-	if (!done_stopprint) {
 	    Sprintf(pbuf, "and %ld piece%s of gold, after %ld move%s.",
 		    umoney, plur(umoney), moves, plur(moves));
-	    putstr(endwin, 0, pbuf);
+	if (!done_stopprint)  putstr(endwin, 0, pbuf);
 #ifdef DUMP_LOG
 	    if (dump_fp) {
 	      dump("", pbuf);
@@ -1080,17 +1122,16 @@ die:
 	      dump("", pbuf);
 	    }
 #endif
-	}
-	if (!done_stopprint) {
 	    Sprintf(pbuf,
 	     "You were level %d with a maximum of %d hit point%s when you %s.",
 		    u.ulevel, u.uhpmax, plur(u.uhpmax), ends[how]);
+	if (!done_stopprint) {
 	    putstr(endwin, 0, pbuf);
 	    putstr(endwin, 0, "");
+	}
 #ifdef DUMP_LOG
 	    if (dump_fp) dump("", pbuf);
 #endif
-	}
 	if (!done_stopprint)
 	    display_nhwindow(endwin, TRUE);
 	if (endwin != WIN_ERR)
@@ -1122,12 +1163,12 @@ struct obj *list;
 boolean identified, all_containers;
 #ifdef DUMP_LOG
 {
-	do_containerconts(list, identified, all_containers, FALSE);
+	do_containerconts(list, identified, all_containers, FALSE, TRUE);
 }
 
-void do_containerconts(list, identified, all_containers, want_dump)
+void do_containerconts(list, identified, all_containers, want_dump, want_disp)
 struct obj *list;
-boolean identified, all_containers, want_dump;
+boolean identified, all_containers, want_dump, want_disp;
 #endif
 /* The original container_contents function */
 {
@@ -1139,11 +1180,19 @@ boolean identified, all_containers, want_dump;
 		if (box->otyp == BAG_OF_TRICKS) {
 		    continue;	/* wrong type of container */
 		} else if (box->cobj) {
-		    winid tmpwin = create_nhwindow(NHW_MENU);
+		    winid tmpwin;
+#ifdef DUMP_LOG
+	if (want_disp)
+#endif
+		    tmpwin = create_nhwindow(NHW_MENU);
 		    Sprintf(buf, "Contents of %s:", the(xname(box)));
+#ifdef DUMP_LOG
+	if (want_disp) {
+#endif
 		    putstr(tmpwin, 0, buf);
 		    putstr(tmpwin, 0, "");
 #ifdef DUMP_LOG
+		    }
 		    if (dump_fp) dump("", buf);
 #endif
 		    for (obj = box->cobj; obj; obj = obj->nobj) {
@@ -1152,28 +1201,36 @@ boolean identified, all_containers, want_dump;
 			    obj->known = obj->bknown =
 			    obj->dknown = obj->rknown = 1;
 			}
-			putstr(tmpwin, 0, doname(obj));
 #ifdef DUMP_LOG
 			if (want_dump)  dump("  ", doname(obj));
+			if (want_disp)
 #endif
-		    }
+			putstr(tmpwin, 0, doname(obj));
+			}
 #ifdef DUMP_LOG
 		    if (want_dump)  dump("","");
+		    if (want_disp) {
 #endif
 		    display_nhwindow(tmpwin, TRUE);
 		    destroy_nhwindow(tmpwin);
-		    if (all_containers) {
 #ifdef DUMP_LOG
+			}
+			if (all_containers) {
 			do_containerconts(box->cobj, identified, TRUE,
-					  want_dump);
+					  want_dump, want_disp);
 #else
+			if (all_containers) {
 			container_contents(box->cobj, identified, TRUE);
 #endif /* DUMP_LOG */
 		    }
 		} else {
+#ifdef DUMP_LOG
+		if (want_disp) {
+#endif
 		    pline("%s empty.", Tobjnam(box, "are"));
 		    display_nhwindow(WIN_MESSAGE, FALSE);
 #ifdef DUMP_LOG
+		    }
 		    if (want_dump) {
 		      dump(The(xname(box)), " is empty.");
 		      dump("", "");
@@ -1238,7 +1295,12 @@ boolean want_dump;
      * includes all dead monsters, not just those killed by the player
      */
     if (ntypes != 0) {
-	c = ask ? yn_function("Do you want an account of creatures vanquished?",
+#ifdef DUMP_LOG
+	c = done_stopprint ? 'n': ask ?
+#else
+	c = ask ?
+#endif
+			yn_function("Do you want an account of creatures vanquished?",
 			      ynqchars, defquery) : defquery;
 	if (c == 'q') done_stopprint++;
 	if (c == 'y') {
@@ -1246,6 +1308,7 @@ boolean want_dump;
 	    putstr(klwin, 0, "Vanquished creatures:");
 	    putstr(klwin, 0, "");
 #ifdef DUMP_LOG
+	} /* the original end of block removed by the patch */
 	    if (want_dump)  dump("", "Vanquished creatures");
 #endif
 
@@ -1275,7 +1338,7 @@ boolean want_dump;
 			    Sprintf(buf, "%d %s",
 				    nkilled, makeplural(mons[i].mname));
 		    }
-		    putstr(klwin, 0, buf);
+		    if (c == 'y') putstr(klwin, 0, buf);
 #ifdef DUMP_LOG
 		    if (want_dump)  dump("  ", buf);
 #endif
@@ -1285,20 +1348,24 @@ boolean want_dump;
 	     *     putstr(klwin, 0, "and a partridge in a pear tree");
 	     */
 	    if (ntypes > 1) {
-		putstr(klwin, 0, "");
+		if (c == 'y') putstr(klwin, 0, "");
 		Sprintf(buf, "%ld creatures vanquished.", total_killed);
-		putstr(klwin, 0, buf);
+		if (c == 'y') putstr(klwin, 0, buf);
 #ifdef DUMP_LOG
 		if (want_dump)  dump("  ", buf);
 #endif
 	    }
+	    if (c == 'y') {
 	    display_nhwindow(klwin, TRUE);
 	    destroy_nhwindow(klwin);
+	    }
 #ifdef DUMP_LOG
 	    if (want_dump)  dump("", "");
+#else
+	} /* the original end of if (c == 'y') */
 #endif
 	}
-    }
+    /* } */
     return (boolean) (total_killed);
 }
 
@@ -1354,7 +1421,8 @@ boolean ask;
 	    putstr(klwin, 0, buf);
 	    putstr(klwin, 0, "");
 #ifdef DUMP_LOG
-	    if (want_dump)  dump("", buf);
+	    }
+	    if (want_dump)  dump("", "Genocided species");
 #endif
 
 	    for (i = LOW_PM; i < NUMMONS; i++)
@@ -1365,17 +1433,22 @@ boolean ask;
 				mons[i].mname);
 		    else
 			Strcpy(buf, makeplural(mons[i].mname));
-		    putstr(klwin, 0, buf);
+		    if (c == 'y') putstr(klwin, 0, buf);
 #ifdef DUMP_LOG
 		    if (want_dump)  dump("  ", buf);
 #endif
 		}
 
-	    putstr(klwin, 0, "");
+	    if (c == 'y') putstr(klwin, 0, "");
 	    Sprintf(buf, "%d species genocided.", ngenocided);
-	    putstr(klwin, 0, buf);
+
+	    if (c == 'y') putstr(klwin, 0, buf);
 #ifdef DUMP_LOG
-	    if (want_dump)  dump("  ", buf);
+	    if (want_dump)  {
+	    dump("  ", buf);
+	    dump("", "");
+	    }
+	    if (c == 'y') {
 #endif
 
 	    display_nhwindow(klwin, TRUE);

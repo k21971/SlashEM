@@ -828,8 +828,9 @@ int how;
 			goto destroywin;
 		}
 #endif	/* UPDATE_RECORD_IN_PLACE */
-		if(!done_stopprint) if(rank0 > 0){
+		if(rank0 > 0){
 		    if(rank0 <= 10) {
+			if(!done_stopprint)
 			topten_print("You made the top ten list!");
 #ifdef DUMP_LOG
 			dump("", "You made the top ten list!");
@@ -839,12 +840,12 @@ int how;
 			Sprintf(pbuf,
 			  "You reached the %d%s place on the top %d list.",
 				rank0, ordin(rank0), ENTRYMAX);
-			topten_print(pbuf);
+			if(!done_stopprint) topten_print(pbuf);
 #ifdef DUMP_LOG
 			dump("", pbuf);
 #endif
 		    }
-		    topten_print("");
+		    if(!done_stopprint) topten_print("");
 #ifdef DUMP_LOG
 		    dump("", "");
 #endif
@@ -860,7 +861,7 @@ int how;
 		    && rank >= rank0
 #endif
 		) writeentry(rfile, t1);
-	    if (done_stopprint) continue;
+	    /* if (done_stopprint) continue; */
 	    if (rank > flags.end_top &&
 		    (rank < rank0 - flags.end_around ||
 		     rank > rank0 + flags.end_around) &&
@@ -874,7 +875,7 @@ int how;
 	    if (rank == rank0 - flags.end_around &&
 		    rank0 > flags.end_top + flags.end_around + 1 &&
 		    !flags.end_own) {
-		topten_print("");
+		if(!done_stopprint) topten_print("");
 #ifdef DUMP_LOG
 		dump("", "");
 #endif
@@ -935,7 +936,7 @@ outheader()
 	bp = eos(linebuf);
 	while(bp < linebuf + COLNO - 9) *bp++ = ' ';
 	Strcpy(bp, "Hp [max]");
-	topten_print(linebuf);
+	if(!done_stopprint) topten_print(linebuf);
 #ifdef DUMP_LOG
 	dump("", linebuf);
 #endif
@@ -1093,12 +1094,12 @@ boolean so;
 	    if (so) {
 		while (bp < linebuf + (COLNO-1)) *bp++ = ' ';
 		*bp = 0;
-		topten_print_bold(linebuf);
+		if(!done_stopprint) topten_print_bold(linebuf);
 #ifdef DUMP_LOG
 		dump("*", linebuf[0]==' '? linebuf+1: linebuf);
 #endif
 	    } else {
-		topten_print(linebuf);
+		if(!done_stopprint) topten_print(linebuf);
 #ifdef DUMP_LOG
 		dump(" ", linebuf[0]==' '? linebuf+1: linebuf);
 #endif
@@ -1124,9 +1125,9 @@ boolean so;
 	    if (so >= COLNO) so = COLNO-1;
 	    while (bp < linebuf + so) *bp++ = ' ';
 	    *bp = 0;
-	    topten_print_bold(linebuf);
+	    if(!done_stopprint) topten_print_bold(linebuf);
 	} else
-	    topten_print(linebuf);
+	    if(!done_stopprint) topten_print(linebuf);
 #ifdef DUMP_LOG
 	dump(" ", linebuf[0]==' '? linebuf+1: linebuf);
 #endif

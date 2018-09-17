@@ -502,6 +502,10 @@ typedef unsigned char	uchar;
 
 #define AUTO_OPEN	/* open doors by walking into them - Stefano Busti */
 
+#define DUMP_LOG        /* Dump game end information to a file */
+#define DUMP_FN "dump_%N_%n_%d.slashem.txt"      /* Fixed dumpfile name, if you want to prevent definition by users */
+#define DUMPMSGS 30     /* Number of latest messages in the dump file  */
+
 /* End of Section 5 */
 
 #include "global.h"	/* Define everything else according to choices above */

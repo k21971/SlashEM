@@ -336,12 +336,16 @@ int verbose;
 static int bot2_abbrev = 0;	/* Line 2 abbreviation level (max 4) */
 
 #ifdef DUMP_LOG
-void
+void bot2str(newbot2)
+char* newbot2;
 #else
 STATIC_OVL void
+bot2()
 #endif
-bot2str(char *newbot2)
 {
+#ifndef DUMP_LOG
+   char  newbot2[MAXCO];
+#endif
 	register char *nb;
 	int hp, hpmax;
 	int cap = near_capacity();
@@ -450,14 +454,14 @@ bot2str(char *newbot2)
 	if(cap > UNENCUMBERED)
 		Sprintf(nb = eos(nb), " %s",
 		  bot2_abbrev >= 2 ? enc_abbrev_stat[cap] : enc_stat[cap]);
+#ifdef DUMP_LOG
 }
-
 STATIC_OVL void
 bot2()
 {
 	char  newbot2[MAXCO];
-
 	bot2str(newbot2);
+#endif
 	curs(WIN_STATUS, 1, 1);
 
 	putstr(WIN_STATUS, 0, newbot2);

@@ -618,7 +618,7 @@ E void FDECL(done, (int));
 E void FDECL(container_contents, (struct obj *,BOOLEAN_P,BOOLEAN_P));
 #ifdef DUMP_LOG
 E void FDECL(dump, (char *, char *));
-E void FDECL(do_containerconts, (struct obj *,BOOLEAN_P,BOOLEAN_P,BOOLEAN_P));
+E void FDECL(do_containerconts, (struct obj *,BOOLEAN_P,BOOLEAN_P,BOOLEAN_P,BOOLEAN_P));
 #endif
 E void FDECL(terminate, (int));
 E int NDECL(dolistvanq);
@@ -845,6 +845,7 @@ E int NDECL(getmonth);	/* KMH -- Used by gypsies */
 E char *FDECL(yymmdd, (time_t));
 #endif
 E long FDECL(yyyymmdd, (time_t));
+E struct tm *getlt();
 E int NDECL(phase_of_the_moon);
 E boolean NDECL(friday_13th);
 E boolean NDECL(groundhog_day);	/* KMH -- February 2 */
@@ -892,7 +893,7 @@ E char *FDECL(xprname, (struct obj *,const char *,CHAR_P,BOOLEAN_P,long,long));
 E int NDECL(ddoinv);
 E char FDECL(display_inventory, (const char *,BOOLEAN_P));
 #ifdef DUMP_LOG
-E char FDECL(dump_inventory, (const char *,BOOLEAN_P));
+E char FDECL(dump_inventory, (const char *,BOOLEAN_P,BOOLEAN_P));
 #endif
 E int FDECL(display_binventory, (int,int,BOOLEAN_P));
 E struct obj *FDECL(display_cinventory,(struct obj *));

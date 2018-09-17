@@ -1280,7 +1280,7 @@ int *spell_no;
 void 
 dump_spells()
 {
-	int i, n;
+	int i;
 	char buf[BUFSZ];
 
 	if (spellid(0) == NO_SPELL) {

@@ -21,7 +21,7 @@ STATIC_PTR int FDECL(ckunpaid,(struct obj *));
 STATIC_PTR int FDECL(ckvalidcat,(struct obj *));
 #ifdef DUMP_LOG
 static char FDECL(display_pickinv,
-		 (const char *,BOOLEAN_P, long *, BOOLEAN_P));
+		 (const char *,BOOLEAN_P, long *, BOOLEAN_P, BOOLEAN_P));
 #else
 static char FDECL(display_pickinv, (const char *,BOOLEAN_P, long *));
 #endif /* DUMP_LOG */
@@ -1263,7 +1263,7 @@ register const char *let,*word;
 		    ilet = display_pickinv(allowed_choices, TRUE,
 					   allowcnt ? &ctmp : (long *)0
 #ifdef DUMP_LOG
-					   , FALSE
+					   , FALSE, TRUE
 #endif
 					   );
 		    if(!ilet) continue;
@@ -1951,11 +1951,12 @@ find_unpaid(list, last_found)
  */
 #ifdef DUMP_LOG
 static char
-display_pickinv(lets, want_reply, out_cnt, want_dump)
+display_pickinv(lets, want_reply, out_cnt, want_dump, want_disp)
 register const char *lets;
 boolean want_reply;
 long* out_cnt;
 boolean want_dump;
+boolean want_disp;
 #else
 static char
 display_pickinv(lets, want_reply, out_cnt)
@@ -1979,6 +1980,9 @@ long* out_cnt;
 	busy++;
 #endif
 
+#ifdef DUMP_LOG
+	if (want_disp) {
+#endif
 	/* overriden by global flag */
 	if (flags.perm_invent) {
 	    win = (lets && *lets) ? local_win : WIN_INVEN;
@@ -1989,6 +1993,7 @@ long* out_cnt;
 	    win = WIN_INVEN;
 
 #ifdef DUMP_LOG
+	}
 	if (want_dump)   dump("", "Your inventory");
 #endif
 
@@ -2004,18 +2009,21 @@ long* out_cnt;
 	to here is short circuited away.
 	*/
 	if (!invent && !(flags.perm_invent && !lets && !want_reply)) {
+#ifdef DUMP_LOG
+	if (want_disp) {
+#endif
 #ifndef GOLDOBJ
 	    pline("Not carrying anything%s.", u.ugold ? " except gold" : "");
 #else
 	    pline("Not carrying anything.");
 #endif
 #ifdef DUMP_LOG
+	    }
 	    if (want_dump) {
 #ifdef GOLDOBJ
 		dump("  ", "Not carrying anything");
 #else
-		dump("  Not carrying anything",
-		    u.ugold ? " except gold." : ".");
+		dump("  Not carrying anything", u.ugold ? " except gold." : ".");
 #endif
 	    }
 #endif
@@ -2035,11 +2043,15 @@ long* out_cnt;
 	    ret = '\0';
 	    for (otmp = invent; otmp; otmp = otmp->nobj) {
 		if (otmp->invlet == lets[0]) {
+#ifdef DUMP_LOG
+		if (want_disp) {
+#endif
 		    ret = message_menu(lets[0],
 			  want_reply ? PICK_ONE : PICK_NONE,
 			  xprname(otmp, (char *)0, lets[0], TRUE, 0L, 0L));
 		    if (out_cnt) *out_cnt = -1L;	/* select all */
 #ifdef DUMP_LOG
+		}
 		    if (want_dump) {
 			char letbuf[7];
 			sprintf(letbuf, "  %c - ", lets[0]);
@@ -2056,6 +2068,9 @@ long* out_cnt;
 	    return ret;
 	}
 
+#ifdef DUMP_LOG
+	if (want_disp)
+#endif
 	start_menu(win);
 nextclass:
 	classcount = 0;
@@ -2066,25 +2081,27 @@ nextclass:
 			if (!flags.sortpack || otmp->oclass == *invlet) {
 			    if (flags.sortpack && !classcount) {
 				any.a_void = 0;		/* zero */
+#ifdef DUMP_LOG
+			if (want_dump)
+				dump("  ", let_to_name(*invlet, FALSE));
+			if (want_disp)
+#endif
 				add_menu(win, NO_GLYPH, &any, 0, 0, iflags.menu_headings,
 				    let_to_name(*invlet, FALSE), MENU_UNSELECTED);
-#ifdef DUMP_LOG
-				if (want_dump)
-				    dump("  ", let_to_name(*invlet, FALSE));
-#endif
 				classcount++;
 			    }
 			    any.a_char = ilet;
+#ifdef DUMP_LOG
+                            if (want_dump) {
+                                char letbuf[7];
+                                sprintf(letbuf, "  %c - ", ilet);
+                                dump(letbuf, doname(otmp));
+                            }
+			    if (want_disp)
+#endif
 			    add_menu(win, obj_to_glyph(otmp),
 					&any, ilet, 0, ATR_NONE, doname(otmp),
 					MENU_UNSELECTED);
-#ifdef DUMP_LOG
-			    if (want_dump) {
-				char letbuf[7];
-				sprintf(letbuf, "  %c - ", ilet);
-				dump(letbuf, doname(otmp));
-			    }
-#endif
 			}
 		}
 	}
@@ -2097,6 +2114,9 @@ nextclass:
 		}
 #endif
 	}
+#ifdef DUMP_LOG
+	if (want_disp) {
+#endif
 	end_menu(win, (char *) 0);
 
 	n = select_menu(win, want_reply ? PICK_ONE : PICK_NONE, &selected);
@@ -2107,6 +2127,7 @@ nextclass:
 	} else
 	    ret = !n ? '\0' : '\033';	/* cancelled */
 #ifdef DUMP_LOG
+	} /* want_disp */
 	if (want_dump)  dump("", "");
 #endif
 
@@ -2130,7 +2151,7 @@ boolean want_reply;
 {
 	return display_pickinv(lets, want_reply, (long *)0
 #ifdef DUMP_LOG
-				, FALSE
+				, FALSE, TRUE
 #endif
 	);
 }
@@ -2138,11 +2159,11 @@ boolean want_reply;
 #ifdef DUMP_LOG
 /* See display_inventory. This is the same thing WITH dumpfile creation */
 char
-dump_inventory(lets, want_reply)
+dump_inventory(lets, want_reply, want_disp)
 register const char *lets;
-boolean want_reply;
+boolean want_reply, want_disp;
 {
-  return display_pickinv(lets, want_reply, (long *)0, TRUE);
+  return display_pickinv(lets, want_reply, (long *)0, TRUE, want_disp);
 }
 #endif
 
