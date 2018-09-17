@@ -500,6 +500,8 @@ typedef unsigned char	uchar;
 /*#define GOLDOBJ */	/* Gold is kept on obj chains - Helge Hafting */
 #define AUTOPICKUP_EXCEPTIONS /* exceptions to autopickup */
 
+#define AUTO_OPEN	/* open doors by walking into them - Stefano Busti */
+
 /* End of Section 5 */
 
 #include "global.h"	/* Define everything else according to choices above */
