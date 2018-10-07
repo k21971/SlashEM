@@ -506,6 +506,10 @@ typedef unsigned char	uchar;
 #define DUMP_FN "/dgldir/userdata/%N/%n/slashem/dumplog/%t.slashem.txt"      /* Fixed dumpfile name, if you want to prevent definition by users */
 #define DUMPMSGS 30     /* Number of latest messages in the dump file  */
 
+/* Filename for dgamelaunch extra info field.
+   Can be left undefined for not writing extrainfo. */
+#define EXTRAINFO_FN "/dgldir/extrainfo-sl008/%n.extrainfo"
+
 /* End of Section 5 */
 
 #include "global.h"	/* Define everything else according to choices above */
