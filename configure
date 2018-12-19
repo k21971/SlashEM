@@ -947,7 +947,7 @@ Optional Features:
   --enable-goldobj        Gold is kept on object chains (experimental)
                           (default=no)
   --enable-autopickup-exceptions
-                          Exceptions to autopickup (experimental) (default=no)
+                          Exceptions to autopickup (experimental) (default=yes)
   --enable-wizmode=USER   enable wizard mode for the specified user
                           (default=wizard)
 
@@ -958,7 +958,7 @@ Optional Packages:
                           Set the program to compress data files
                           (default=auto)
   --with-owner=USER       Set the owner of installed files (default=games)
-  --with-group=GROUP      Set the group of installed files (default=bin)
+  --with-group=GROUP      Set the group of installed files (default=games)
 
 Some influential environment variables:
   CC          C compiler
@@ -6976,7 +6976,7 @@ if test "${with_group+set}" = set; then
   withval="$with_group"
 
 else
-  with_group=bin
+  with_group=games
 fi;
     if test "$with_group" != "no" ; then
 

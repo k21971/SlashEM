@@ -8,7 +8,7 @@
 
 # autonamed chroot directory. Can rename.
 DATESTAMP=`date +%Y%m%d-%H%M%S`
-NAO_CHROOT="/opt/nethack/hardfought.org"
+NAO_CHROOT="/opt/nethack/chroot"
 # already compiled versions of dgl and nethack
 NETHACK_GIT="/home/build/slashem"
 # the user & group from dgamelaunch config file.
