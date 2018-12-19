@@ -748,6 +748,7 @@ int tech_no;
                 if (u.usteed) {
                         pline("%s gets tamer.", Monnam(u.usteed));
                         tamedog(u.usteed, (struct obj *) 0);
+                        if (u.usteed->mtame < 20) u.usteed->mtame++;
                         t_timeout = rn1(1000,500);
                 } else
                         Your("technique is only effective when riding a monster.");
