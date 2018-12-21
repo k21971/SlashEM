@@ -145,6 +145,11 @@ static struct Bool_Opt
 #else
 	{"mail", (boolean *)0, TRUE, SET_IN_FILE},
 #endif
+#if defined(STATUS_COLORS) && defined(TEXTCOLOR)
+       {"statuscolors", &iflags.use_status_colors, TRUE, SET_IN_GAME},
+#else
+       {"statuscolors", (boolean *)0, TRUE, SET_IN_GAME},
+#endif
 #ifdef MENU_COLOR
 # ifdef MICRO
 	{"menucolors", &iflags.use_menu_color, TRUE,  SET_IN_GAME},
@@ -376,6 +381,7 @@ static struct Comp_Opt
 #ifdef MSDOS
 	{ "soundcard", "type of sound card to use", 20, SET_IN_FILE },
 #endif
+        { "statuscolor", "set status colors", PL_PSIZ, SET_IN_FILE },
 	{ "suppress_alert", "suppress alerts about version-specific features",
 						8, SET_IN_GAME },
 	{ "tile_width", "width of tiles", 20, DISP_IN_GAME},	/*WC*/
@@ -1145,9 +1151,9 @@ char *str;
    int errnum;
    char errbuf[80];
 #endif
-   
+
    if (!cs || !str) return FALSE;
-   
+
    tmps = cs;
    tmps++;
    while (*tmps && isspace(*tmps)) tmps++;
@@ -1159,9 +1165,9 @@ char *str;
      }
    if ((i == SIZE(colornames)) && (*tmps >= '0' && *tmps <='9'))
      c = atoi(tmps);
-   
+
    if (c > 15) return FALSE;
-   
+
    tmps = strchr(str, '&');
    if (tmps) {
       tmps++;
@@ -1174,7 +1180,7 @@ char *str;
       if ((i == SIZE(attrnames)) && (*tmps >= '0' && *tmps <='9'))
 	a = atoi(tmps);
    }
-   
+
    *cs = '\0';
    tmps = str;
    if ((*tmps == '"') || (*tmps == '\'')) {
@@ -1185,7 +1191,7 @@ char *str;
 	 tmps++;
       }
    }
-   
+
    tmp = (struct menucoloring *)alloc(sizeof(struct menucoloring));
 #ifdef USE_REGEX_MATCH
 # ifdef GNU_REGEX
@@ -1198,12 +1204,12 @@ char *str;
 # else
 #  ifdef POSIX_REGEX
    errnum = regcomp(&tmp->match, tmps, REG_EXTENDED | REG_NOSUB);
-   if (errnum != 0) {                                                                                                                                                                                                               
+   if (errnum != 0) {
       regerror(errnum, &tmp->match, errbuf, sizeof(errbuf));
       err = errbuf;
    }
-#  endif  
-# endif  
+#  endif
+# endif
 #else
    tmp->match = (char *)alloc(strlen(tmps)+1);
    (void) memcpy((genericptr_t)tmp->match, (genericptr_t)tmps, strlen(tmps)+1);
@@ -1222,6 +1228,164 @@ char *str;
    }
 }
 #endif /* MENU_COLOR */
+
+#if defined(STATUS_COLORS) && defined(TEXTCOLOR)
+
+struct name_value {
+	char *name;
+	int value;
+};
+
+const struct name_value status_colornames[] = {
+	{ "black",	CLR_BLACK },
+	{ "red",	CLR_RED },
+	{ "green",	CLR_GREEN },
+	{ "brown",	CLR_BROWN },
+	{ "blue",	CLR_BLUE },
+	{ "magenta",	CLR_MAGENTA },
+	{ "cyan",	CLR_CYAN },
+	{ "gray",	CLR_GRAY },
+	{ "orange",	CLR_ORANGE },
+	{ "lightgreen",	CLR_BRIGHT_GREEN },
+	{ "yellow",	CLR_YELLOW },
+	{ "lightblue",	CLR_BRIGHT_BLUE },
+	{ "lightmagenta", CLR_BRIGHT_MAGENTA },
+	{ "lightcyan",	CLR_BRIGHT_CYAN },
+	{ "white",	CLR_WHITE },
+	{ NULL,		-1 }
+};
+
+const struct name_value status_attrnames[] = {
+	 { "none",	ATR_NONE },
+	 { "bold",	ATR_BOLD },
+	 { "dim",	ATR_DIM },
+	 { "underline",	ATR_ULINE },
+	 { "blink",	ATR_BLINK },
+	 { "inverse",	ATR_INVERSE },
+	 { NULL,	-1 }
+};
+
+int
+value_of_name(name, name_values)
+const char *name;
+const struct name_value *name_values;
+{
+	while (name_values->name && !strstri(name_values->name, name))
+		++name_values;
+	return name_values->value;
+}
+
+struct color_option
+parse_color_option(start)
+char *start;
+{
+	struct color_option result = {NO_COLOR, 0};
+	char last;
+	char *end;
+	int attr;
+
+	for (end = start; *end != '&' && *end != '\0'; ++end);
+	last = *end;
+	*end = '\0';
+	result.color = value_of_name(start, status_colornames);
+
+	while (last == '&') {
+		for (start = ++end; *end != '&' && *end != '\0'; ++end);
+		last = *end;
+		*end = '\0';
+		attr = value_of_name(start, status_attrnames);
+		if (attr >= 0)
+			result.attr_bits |= 1 << attr;
+	}
+
+	return result;
+}
+
+const struct percent_color_option *hp_colors = NULL;
+const struct percent_color_option *pw_colors = NULL;
+const struct text_color_option *text_colors = NULL;
+
+struct percent_color_option *
+add_percent_option(new_option, list_head)
+struct percent_color_option *new_option;
+struct percent_color_option *list_head;
+{
+	if (list_head == NULL)
+		return new_option;
+	if (new_option->percentage <= list_head->percentage) {
+		new_option->next = list_head;
+		return new_option;
+	}
+	list_head->next = add_percent_option(new_option, list_head->next);
+	return list_head;
+}
+
+boolean
+parse_status_color_option(start)
+char *start;
+{
+	char *middle;
+
+	while (*start && isspace(*start)) start++;
+	for (middle = start; *middle != ':' && *middle != '=' && *middle != '\0'; ++middle);
+	*middle++ = '\0';
+	if (middle - start > 2 && start[2] == '%') {
+		struct percent_color_option *percent_color_option =
+			(struct percent_color_option *)alloc(sizeof(*percent_color_option));
+		percent_color_option->next = NULL;
+		percent_color_option->percentage = atoi(start + 3);
+		percent_color_option->color_option = parse_color_option(middle);
+		start[2] = '\0';
+		if (percent_color_option->color_option.color >= 0
+		 && percent_color_option->color_option.attr_bits >= 0) {
+			if (!strcmpi(start, "hp")) {
+				hp_colors = add_percent_option(percent_color_option, hp_colors);
+				return TRUE;
+			}
+			if (!strcmpi(start, "pw")) {
+				pw_colors = add_percent_option(percent_color_option, pw_colors);
+				return TRUE;
+			}
+		}
+		free(percent_color_option);
+		return FALSE;
+	} else {
+		int length = strlen(start) + 1;
+		struct text_color_option *text_color_option =
+			(struct text_color_option *)alloc(sizeof(*text_color_option));
+		text_color_option->next = NULL;
+		text_color_option->text = (char *)alloc(length);
+		memcpy((char *)text_color_option->text, start, length);
+		text_color_option->color_option = parse_color_option(middle);
+		if (text_color_option->color_option.color >= 0
+		 && text_color_option->color_option.attr_bits >= 0) {
+			text_color_option->next = text_colors;
+			text_colors = text_color_option;
+			return TRUE;
+		}
+		free(text_color_option->text);
+		free(text_color_option);
+		return FALSE;
+	}
+}
+
+boolean
+parse_status_color_options(start)
+char *start;
+{
+	char last = ',';
+	char *end = start - 1;
+	boolean ok = TRUE;
+	while (last == ',') {
+		for (start = ++end; *end != ',' && *end != '\0'; ++end);
+		last = *end;
+		*end = '\0';
+		ok = parse_status_color_option(start) && ok;
+	}
+	return ok;
+}
+
+#endif /* STATUS_COLORS */
 
 void
 parseoptions(opts, tinitial, tfrom_file)
@@ -2147,6 +2311,17 @@ goodfruit:
 	    return;
 	}
 
+       fullname = "statuscolor";
+       if (match_optname(opts, fullname, 11, TRUE)) {
+#if defined(STATUS_COLORS) && defined(TEXTCOLOR)
+               if (negated) bad_negation(fullname, FALSE);
+               else if ((op = string_for_env_opt(fullname, opts, FALSE)) != 0)
+                       if (!parse_status_color_options(op))
+                               badoption(opts);
+#endif
+           return;
+       }
+
 	fullname = "suppress_alert";
 	if (match_optname(opts, fullname, 4, TRUE)) {
 		op = string_for_opt(opts, negated);
@@ -2154,7 +2329,7 @@ goodfruit:
 		else if (op) (void) feature_alert_opts(op,fullname);
 		return;
 	}
-	
+
 	fullname = "tileset";
 	if (match_optname(opts, fullname, 4, TRUE)) {
 		if (negated || (op = string_for_opt(opts, TRUE)) == 0)

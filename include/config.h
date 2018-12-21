@@ -510,6 +510,8 @@ typedef unsigned char	uchar;
    Can be left undefined for not writing extrainfo. */
 #define EXTRAINFO_FN "/dgldir/extrainfo-sl008/%n.extrainfo"
 
+#define STATUS_COLORS
+
 /* End of Section 5 */
 
 #include "global.h"	/* Define everything else according to choices above */
