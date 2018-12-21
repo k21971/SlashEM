@@ -826,20 +826,6 @@ die:
 		  (flags.female && urole.name.f)?
 		   urole.name.f : urole.name.m);
 	  dump("", pbuf);
-# ifdef DUMPMSGS
-	  if (lastmsg >= 0) {
-		dump ("", "Latest messages");
-		for (i = lastmsg + 1; i < DUMPMSGS; i++) {
-		  if (msgs[i] && strcmp(msgs[i], "") )
-		    dump ("  ", msgs[i]);
-		} 
-		for (i = 0; i <= lastmsg; i++) {
-		  if (msgs[i] && strcmp(msgs[i], "") )
-		    dump ("  ", msgs[i]);
-		} 
-		dump ("","");
-	  }
-#  endif /* DUMPMSGS */
 	  /* D: Add a line for clearance from the screen dump */
 	  dump("", "");
 	  dump_screen();
@@ -937,6 +923,20 @@ die:
 
 	if (strcmp(flags.end_disclose, "none") && how != PANICKED) {
 		disclose(how, taken);
+# ifdef DUMPMSGS
+          if (lastmsg >= 0) {
+                dump ("", "Latest messages");
+                for (i = lastmsg + 1; i < DUMPMSGS; i++) {
+                  if (msgs[i] && strcmp(msgs[i], "") )
+                    dump ("  ", msgs[i]);
+                }
+                for (i = 0; i <= lastmsg; i++) {
+                  if (msgs[i] && strcmp(msgs[i], "") )
+                    dump ("  ", msgs[i]);
+                }
+                dump ("","");
+          }
+#  endif /* DUMPMSGS */
 	}
 	/* finish_paybill should be called after disclosure but before bones */
 	if (bones_ok && taken) finish_paybill();
