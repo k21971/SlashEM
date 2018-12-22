@@ -626,6 +626,8 @@ bot2()
 	char  newbot2[MAXCO];
 	bot2str(newbot2);
 #endif
+        curs(WIN_STATUS, 1, 1);
+        putstr(WIN_STATUS, 0, newbot2);
 	return;
 }
 
