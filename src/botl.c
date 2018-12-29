@@ -52,9 +52,9 @@ STATIC_DCL void FDECL(set_botl_warn, (int));
  * -- or somewhat over 160 characters
  */
 #if COLNO <= 170
-#define MAXCO 190
+#define MAXCO 210
 #else
-#define MAXCO (COLNO+20)
+#define MAXCO (COLNO+40)
 #endif
 
 #if defined(STATUS_COLORS) && defined(TEXTCOLOR)
@@ -604,9 +604,9 @@ bot2()
                add_colored_text(" Held", newbot2);
 #else
 		Sprintf(nb = eos(nb), bot2_abbrev >= 2 ? " Slm" : " Slime");
-#endif
 	if(u.ustuck && !u.uswallow && !sticks(youmonst.data))
 		Sprintf(nb = eos(nb), " Held");
+#endif
 	if(cap > UNENCUMBERED)
 #if defined(STATUS_COLORS) && defined(TEXTCOLOR)
                add_colored_text(enc_stat[cap], newbot2);
