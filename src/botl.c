@@ -537,7 +537,11 @@ bot2()
         if (bot2_abbrev >= 2) {
 		if (hu_abbrev_stat[u.uhs][0]!='\0') {
 			Sprintf(nb = eos(nb), " ");
+#if defined(STATUS_COLORS) && defined(TEXTCOLOR)
+                        add_colored_text(hu_abbrev_stat[u.uhs], newbot2);
+#else
 			Strcat(newbot2, hu_abbrev_stat[u.uhs]);
+#endif
 		}
 	}
 
@@ -560,14 +564,14 @@ bot2()
 	if(Levitation)    Sprintf(nb = eos(nb), " Lev");
 	if(Confusion)
 #if defined(STATUS_COLORS) && defined(TEXTCOLOR)
-                add_colored_text("Conf", newbot2);
+                add_colored_text(bot2_abbrev >= 2 ? " Cnf" : "Conf", newbot2);
 #else
 		Sprintf(nb = eos(nb), bot2_abbrev >= 2 ? " Cnf" : " Conf");
 #endif
 	if(Sick) {
 		if (u.usick_type & SICK_VOMITABLE)
 #if defined(STATUS_COLORS) && defined(TEXTCOLOR)
-                       add_colored_text("FoodPois", newbot2);
+                       add_colored_text( bot2_abbrev >= 2 ? " FPs" : "FoodPois", newbot2);
 #else
 			   Sprintf(nb = eos(nb), bot2_abbrev >= 2 ? " FPs" : " FoodPois");
 #endif
@@ -581,35 +585,37 @@ bot2()
 
 	if(Blind)
 #if defined(STATUS_COLORS) && defined(TEXTCOLOR)
-               add_colored_text("Blind", newbot2);
+               add_colored_text(bot2_abbrev >= 2 ? " Bnd" : "Blind", newbot2);
 #else
 		Sprintf(nb = eos(nb), bot2_abbrev >= 2 ? " Bnd" : " Blind");
 #endif
 	if(Stunned)
 #if defined(STATUS_COLORS) && defined(TEXTCOLOR)
-               add_colored_text("Stun", newbot2);
+               add_colored_text(bot2_abbrev >= 2 ? " Stn" : "Stun", newbot2);
 #else
 		Sprintf(nb = eos(nb), bot2_abbrev >= 2 ? " Stn" : " Stun");
 #endif
 	if(Hallucination)
 #if defined(STATUS_COLORS) && defined(TEXTCOLOR)
-               add_colored_text("Hallu", newbot2);
+               add_colored_text(bot2_abbrev >= 2 ? " Hal" : "Hallu", newbot2);
 #else
 		Sprintf(nb = eos(nb), bot2_abbrev >= 2 ? " Hal" : " Hallu");
 #endif
 	if(Slimed)
 #if defined(STATUS_COLORS) && defined(TEXTCOLOR)
-               add_colored_text("Slime", newbot2);
-        if(u.ustuck && !u.uswallow && !sticks(youmonst.data))
-               add_colored_text(" Held", newbot2);
+               add_colored_text(bot2_abbrev >= 2 ? " Slm" : "Slime", newbot2);
 #else
 		Sprintf(nb = eos(nb), bot2_abbrev >= 2 ? " Slm" : " Slime");
-	if(u.ustuck && !u.uswallow && !sticks(youmonst.data))
+#endif
+        if(u.ustuck && !u.uswallow && !sticks(youmonst.data))
+#if defined(STATUS_COLORS) && defined(TEXTCOLOR)
+               add_colored_text(" Held", newbot2);
+#else
 		Sprintf(nb = eos(nb), " Held");
 #endif
 	if(cap > UNENCUMBERED)
 #if defined(STATUS_COLORS) && defined(TEXTCOLOR)
-               add_colored_text(enc_stat[cap], newbot2);
+               add_colored_text(bot2_abbrev >= 2 ? enc_abbrev_stat[cap] : enc_stat[cap], newbot2);
 #else
 		Sprintf(nb = eos(nb), " %s",
 		  bot2_abbrev >= 2 ? enc_abbrev_stat[cap] : enc_stat[cap]);
