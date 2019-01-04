@@ -684,6 +684,7 @@ const char *str;
 unsigned int len;
 {
     static char cbuf[MAXCO];
+    if (bot2_abbrev) return str; /* no recursion! */
     for(bot2_abbrev = 1; bot2_abbrev <= 4; bot2_abbrev++) {
 	bot2str(cbuf);
 	if (strlen(cbuf) <= len)
