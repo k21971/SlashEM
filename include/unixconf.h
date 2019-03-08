@@ -338,7 +338,7 @@
 #endif
 #define tgetch getchar
 
-#define SHELL		/* do not delete the '!' command */
+/* #define SHELL */		/* do not delete the '!' command */
 
 /* -AJA- Escaping to a shell doesn't work when SDL port is running
  *       fullscreen (makes the computer seem frozen).  Undefining
