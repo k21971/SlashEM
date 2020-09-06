@@ -227,6 +227,8 @@ extern const char * const killed_by_prefix[];	/* from topten.c */
 int
 done2()
 {
+	if (iflags.debug_fuzzer)
+		return 0;
 	if(yn("Really quit?") == 'n') {
 #ifndef NO_SIGNAL
 		(void) signal(SIGINT, (SIG_RET_TYPE) done1);
@@ -733,6 +735,27 @@ int how;
 	    }
 #endif
 	}
+
+	if (iflags.debug_fuzzer) {
+	        if (!(program_state.panicking || how == PANICKED)) {
+	            savelife(how);
+	            /* periodically restore characteristics and lost exp levels
+	               or cure lycanthropy */
+	            if (!rn2(10)) {
+	                struct obj *potion = mksobj((u.ulycn > LOW_PM && !rn2(3))
+	                                            ? POT_WATER : POT_RESTORE_ABILITY,
+	                                            TRUE, FALSE);
+
+	                bless(potion);
+	                (void) peffects(potion); /* always -1 for restore ability */
+	                /* not useup(); we haven't put this potion into inventory */
+	                obfree(potion, (struct obj *) 0);
+	            }
+	            killer = '\0';
+	            killer_format = 0;
+	            return;
+	        }
+	    }
 
 	/* kilbuf: used to copy killer in case it comes from something like
 	 *	xname(), which would otherwise get overwritten when we call

@@ -309,6 +309,7 @@ char *argv[];
 			  int uid;
 			  struct passwd *pw = (struct passwd *)0;
 
+			    wizard = TRUE;
 			  uid = getuid();
 			  user = getlogin();
 			  if (user) {
@@ -326,12 +327,11 @@ char *argv[];
 			      }
 			  }
 			  if (pw && !strcmp(pw->pw_name,WIZARD)) {
-			      wizard = TRUE;
-			      break;
 			  }
 			}
 			/* otherwise fall thru to discover */
-			wiz_error_flag = TRUE;
+			    wizard = TRUE;
+			//wiz_error_flag = TRUE;
 #endif
 		case 'X':
 			discover = TRUE;

@@ -173,6 +173,7 @@ struct flag {
  */
 
 struct instance_flags {
+	boolean debug_fuzzer;  /* fuzz testing */
 	boolean  cbreak;	/* in cbreak mode, rogue format */
 	boolean  DECgraphics;	/* use DEC VT-xxx extended character set */
 	boolean  echo;		/* 1 to echo characters */
