@@ -97,7 +97,7 @@ CC = @CC@ -DAUTOCONF
 # CFLAGS = -g -I../include -I$(srcdir)/../include
 
 CFLAGS = -O -I../include -I$(srcdir)/../include @CFLAGS@
-LFLAGS =
+LFLAGS = @LFLAGS@
 
 LIBS =
  
