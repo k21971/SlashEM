@@ -2848,10 +2848,10 @@ register struct obj *obj, *otmp;
 		impossible("Zero quantity on bill??");
 	}
 	bp->bquan -= otmp->quan;
+	tmp = bp->price; /* We get this now before the memory is reallocated */
 
 	if (!extend_bill(ESHK(shkp), 1)) otmp->unpaid = 0;
 	else {
-		tmp = bp->price;
 		bp = &(ESHK(shkp)->bill_p[ESHK(shkp)->billct]);
 		bp->bo_id = otmp->o_id;
 		bp->bquan = otmp->quan;
