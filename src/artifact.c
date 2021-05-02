@@ -1690,16 +1690,16 @@ arti_invoke(obj)
 	    int i, num_ok_dungeons, last_ok_dungeon = 0;
 	    d_level newlev;
 	    extern int n_dgns; /* from dungeon.c */
-	    winid tmpwin = create_nhwindow(NHW_MENU);
 	    anything any;
 
 	    any.a_void = 0;	/* set all bits to zero */
- #ifdef BLACKMARKET           
+ #ifdef BLACKMARKET
 	    if (Is_blackmarket(&u.uz) && *u.ushops) {
 		You("feel very disoriented for a moment.");
 		break;
 	    }
  #endif
+            winid tmpwin = create_nhwindow(NHW_MENU);
 	    start_menu(tmpwin);
 	    /* use index+1 (cant use 0) as identifier */
 	    for (i = num_ok_dungeons = 0; i < n_dgns; i++) {
