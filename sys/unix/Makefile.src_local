@@ -144,8 +144,7 @@ SYSOBJ = ioctl.o unixmain.o unixtty.o unixunix.o unixres.o
 # flags for debugging:
 # CFLAGS = -g -I../include
 
-CFLAGS = -g3 -O0 -fcommon -I../include -Wno-format-overflow
-CFLAGS += -DHACKDIR=\"/slashem-0.0.8E0F2\"
+CFLAGS = -g3 -O0 -fcommon -I../include -Wno-format-overflow -DHACKDIR=\"/usr/games/lib/slashemdir\"
 LFLAGS = -g3
 
 # Only used for the Gnome interface.

@@ -30,7 +30,7 @@ SYSOBJ=@SYSOBJ@
 CC = @CC@ -DAUTOCONF
 WINDRES = @WINDRES@
 
-CFLAGS = -O -I../include -I$(srcdir)/../include @CFLAGS@
+CFLAGS = -g3 -O0 -I../include -I$(srcdir)/../include @CFLAGS@
 LFLAGS = @LFLAGS@
 
 # Only used for the Gnome interface.
@@ -51,8 +51,8 @@ WINPROXYCFLAGS=@NETHACK_PROXY_CFLAGS@
 
 # files for a straight tty port using no native windowing system
 WINTTYSRC = $(srcdir)/../win/tty/getline.c $(srcdir)/../win/tty/termcap.c $(srcdir)/../win/tty/topl.c \
-	$(srcdir)/../win/tty/wintty.c 
-WINTTYOBJ = getline.o termcap.o topl.o wintty.o 
+	$(srcdir)/../win/tty/wintty.c
+WINTTYOBJ = getline.o termcap.o topl.o wintty.o
 #
 # files for an X11 port
 # (tile.c is included in the defn. for WINCSRC, below)

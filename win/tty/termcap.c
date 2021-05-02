@@ -962,8 +962,10 @@ cl_eos()			/* free after Robert Viduya */
 
 #include <curses.h>
 
+#if 0
 #if !defined(LINUX) && !defined(__FreeBSD__) && !defined(__APPLE__)
 extern char *tparm();
+#endif
 #endif
 
 #  ifdef COLOR_BLACK	/* trust include file */
