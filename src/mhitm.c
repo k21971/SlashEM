@@ -377,6 +377,9 @@ mattackm(magr, mdef)
 		}
 		dieroll = rnd(20 + i);
 		strike = (tmp > dieroll);
+		/* KMH -- don't accumulate to-hit bonuses */
+		if (otmp)
+		    tmp -= hitval(otmp, mdef);
 		if (strike) {
 		    res[i] = hitmm(magr, mdef, mattk);
 		    if((mdef->data == &mons[PM_BLACK_PUDDING] || mdef->data == &mons[PM_BROWN_PUDDING])
@@ -394,9 +397,6 @@ mattackm(magr, mdef)
 		    }
 		} else
 		    missmm(magr, mdef, tmp, dieroll, mattk);
-		/* KMH -- don't accumulate to-hit bonuses */
-		if (otmp)
-		    tmp -= hitval(otmp, mdef);
 		break;
 
 	    case AT_HUGS:	/* automatic if prev two attacks succeed */
