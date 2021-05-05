@@ -1461,7 +1461,7 @@ doinvoke()
 
 STATIC_OVL int
 arti_invoke(obj)
-    register struct obj *obj;
+    struct obj *obj;
 {
     register const struct artifact *oart = get_artifact(obj);
 	    register struct monst *mtmp;
@@ -1476,7 +1476,7 @@ arti_invoke(obj)
 
     if(!oart || !oart->inv_prop) {
 	if(obj->otyp == CRYSTAL_BALL)
-	    use_crystal_ball(obj);
+	    use_crystal_ball(&obj);
 	else
 	    pline(nothing_happens);
 	return 1;

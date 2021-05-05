@@ -3679,7 +3679,7 @@ doapply()
 		res = use_towel(obj);
 		break;
 	case CRYSTAL_BALL:
-		use_crystal_ball(obj);
+		use_crystal_ball(&obj);
 		break;
 /* STEPHEN WHITE'S NEW CODE */
 /* KMH, balance patch -- source of abuse */
