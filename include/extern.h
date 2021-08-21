@@ -212,6 +212,10 @@ E void NDECL(confdir);
 E int FDECL(isok, (int,int));
 E int FDECL(get_adjacent_loc, (const char *, const char *, XCHAR_P, XCHAR_P, coord *));
 E const char *FDECL(click_to_cmd, (int,int,int));
+#ifdef HANGUPHANDLING
+E void FDECL(hangup, (int));
+E void NDECL(end_of_input);
+#endif
 E char NDECL(readchar);
 #ifdef WIZARD
 E void NDECL(sanity_check);
@@ -2494,8 +2498,11 @@ E void FDECL(unwield, (struct obj *,BOOLEAN_P));
 /* ### windows.c ### */
 
 E void FDECL(choose_windows, (const char *));
-E char FDECL(genl_message_menu, (CHAR_P,int,const char *));
+E char FDECL(genl_message_menu, (int,int,const char *));
 E void FDECL(genl_preference_update, (const char *));
+#ifdef HANGUPHANDLING
+E void NDECL(nhwindows_hangup);
+#endif
 
 /* ### wizard.c ### */
 

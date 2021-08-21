@@ -329,6 +329,14 @@ typedef xchar	boolean;		/* 0 or 1 */
 # endif
 #endif
 
+#if defined(UNIX) || defined(VMS) || defined(__EMX__) || defined(WIN32)
+#define HANGUPHANDLING
+#endif
+#if defined(SAFERHANGUP) \
+    && (defined(NOSAVEONHANGUP) || !defined(HANGUPHANDLING))
+#undef SAFERHANGUP
+#endif
+
 #define Sprintf  (void) sprintf
 #define Strcat   (void) strcat
 #define Strcpy   (void) strcpy

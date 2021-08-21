@@ -752,6 +752,10 @@ newsym(x,y)
     register xchar worm_tail;
 
     if (in_mklev) return;
+#ifdef HANGUPHANDLING
+    if (program_state.done_hup)
+        return;
+#endif
 
     /* only permit updating the hero when swallowed */
     if (u.uswallow) {
@@ -1646,6 +1650,10 @@ flush_screen(cursor_on_u)
     if (delay_flushing) return;
     if (flushing) return;	/* if already flushing then return */
     flushing = 1;
+#ifdef HANGUPHANDLING
+    if (program_state.done_hup)
+        return;
+#endif
 
     for (y = 0; y < ROWNO; y++) {
 	register gbuf_entry *gptr = &gbuf[y][x = gbuf_start[y]];
