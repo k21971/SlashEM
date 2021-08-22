@@ -684,6 +684,17 @@ movemon()
     */
 
     for(mtmp = fmon; mtmp; mtmp = nmtmp) {
+        /* end monster movement early if hero is flagged to leave the level */
+        if (u.utotype
+#ifdef SAFERHANGUP
+            /* or if the program has lost contact with the user */
+            || program_state.done_hup
+#endif
+            ) {
+            somebody_can_move = FALSE;
+            break;
+        }
+
 	nmtmp = mtmp->nmon;
 
 	/* Find a monster that we have not treated yet.	 */

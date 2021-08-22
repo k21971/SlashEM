@@ -99,6 +99,10 @@ pline VA_DECL(const char *, line)
 /* Do NOT use VA_START and VA_END in here... see above */
 
 	if (!line || !*line) return;
+#ifdef HANGUPHANDLING
+	if (program_state.done_hup)
+	    return;
+#endif
 	if (index(line, '%')) {
 	    Vsprintf(pbuf,line,VA_ARGS);
 	    line = pbuf;
