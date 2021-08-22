@@ -197,6 +197,8 @@
  */
 /* #define TIMED_DELAY */	/* usleep() */
 
+/* #define AVOID_WIN_IOCTL */ /* ensure USE_WIN_IOCTL remains undefined */
+
 # ifdef TEXTCOLOR
 #  define VIDEOSHADES
 # endif
