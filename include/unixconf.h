@@ -276,7 +276,7 @@
 /* #define COMPRESS_OPTIONS "-q" */
 #endif
 
-#define FCMASK	0660	/* file creation mask */
+#define FCMASK	0644	/* file creation mask */
 
 
 /*
