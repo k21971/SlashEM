@@ -2248,6 +2248,7 @@ E int FDECL(flash_hits_mon, (struct monst *,struct obj *));
 /* ### unixmain.c ### */
 
 #ifdef UNIX
+extern void sethanguphandler(void(*)(int));
 # ifdef PORT_HELP
 E void NDECL(port_help);
 # endif

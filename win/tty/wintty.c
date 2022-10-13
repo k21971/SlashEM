@@ -41,6 +41,33 @@ extern void msmsg(const char *,...);
 
 extern char mapped_menu_cmds[]; /* from options.c */
 
+#ifdef HANGUP_HANDLING
+/*
+ * NetHack's core switches to a dummy windowing interface when it
+ * detects SIGHUP, but that's no help for any interface routine which
+ * is already in progress at the time, and there have been reports of
+ * runaway disconnected processes which use up all available CPU time.
+ * HUPSKIP() and HUPSKIP_RESULT(x) are used to try to cut them off so
+ * that they return to the core instead attempting more terminal I/O.
+ */
+#define HUPSKIP() \
+    do {                                        \
+        if (program_state.done_hup) {         \
+            morc = '\033';                      \
+            return;                             \
+        }                                       \
+    } while (0)
+    /* morc=ESC - in case we bypass xwaitforspace() which sets that */
+#define HUPSKIP_RESULT(RES) \
+    do {                                        \
+        if (program_state.done_hup)           \
+            return (RES);                       \
+    } while (0)
+#else /* !HANGUP_HANDLING */
+#define HUPSKIP() /*empty*/
+#define HUPSKIP_RESULT(RES) /*empty*/
+#endif /* ?HANGUP_HANDLING */
+
 /* Interface definition, for windows.c */
 struct window_procs tty_procs = {
     "tty",
@@ -880,6 +907,7 @@ tty_get_nh_event()
 STATIC_OVL void
 getret()
 {
+	HUPSKIP();
 	xputs("\n");
 	if(flags.standout)
 		standoutbeg();
@@ -1113,6 +1141,7 @@ tty_clear_nhwindow(window)
 {
     register struct WinDesc *cw = 0;
 
+    HUPSKIP();
     if(window == WIN_ERR || (cw = wins[window]) == (struct WinDesc *) 0)
 	panic(winpanicstr,  window);
     ttyDisplay->lastwin = window;
@@ -1158,6 +1187,7 @@ dmore(cw, s)
     const char *prompt = cw->morestr ? cw->morestr : defmorestr;
     int offset = (cw->type == NHW_TEXT) ? 1 : 2;
 
+    HUPSKIP();
     tty_curs(BASE_WINDOW,
 	     (int)ttyDisplay->curx + offset, (int)ttyDisplay->cury);
     if(flags.standout)
@@ -1177,6 +1207,8 @@ set_item_state(window, lineno, item)
     tty_menu_item *item;
 {
     char ch = item->selected ? (item->count == -1L ? '+' : '#') : '-';
+
+    HUPSKIP();
     tty_curs(window, 4, lineno);
     term_start_attr(item->attr);
     (void) putchar(ch);
@@ -1345,6 +1377,7 @@ struct WinDesc *cw;
 
     /* loop until finished */
     while (!finished) {
+	HUPSKIP();
 	if (reset_count) {
 	    counting = FALSE;
 	    count = 0;
@@ -1625,6 +1658,7 @@ struct WinDesc *cw;
     register char *cp;
 
     for (n = 0, i = 0; i < cw->maxrow; i++) {
+        HUPSKIP();
 	if (!cw->offx && (n + cw->offy == ttyDisplay->rows - 1)) {
 	    tty_curs(window, 1, n);
 	    cl_end();
@@ -1678,6 +1712,7 @@ tty_display_nhwindow(window, blocking)
 {
     register struct WinDesc *cw = 0;
 
+    HUPSKIP();
     if(window == WIN_ERR || (cw = wins[window]) == (struct WinDesc *) 0)
 	panic(winpanicstr,  window);
     if(cw->flags & WIN_CANCELLED)
@@ -1745,6 +1780,7 @@ tty_dismiss_nhwindow(window)
 {
     register struct WinDesc *cw = 0;
 
+    HUPSKIP();
     if(window == WIN_ERR || (cw = wins[window]) == (struct WinDesc *) 0)
 	panic(winpanicstr,  window);
 
@@ -1813,6 +1849,7 @@ register int x, y;	/* not xchar: perhaps xchar is unsigned and
     int cx = ttyDisplay->curx;
     int cy = ttyDisplay->cury;
 
+    HUPSKIP();
     if(window == WIN_ERR || (cw = wins[window]) == (struct WinDesc *) 0)
 	panic(winpanicstr,  window);
     ttyDisplay->lastwin = window;
@@ -1887,6 +1924,7 @@ tty_putsym(window, x, y, ch)
 {
     register struct WinDesc *cw = 0;
 
+    HUPSKIP();
     if(window == WIN_ERR || (cw = wins[window]) == (struct WinDesc *) 0)
 	panic(winpanicstr,  window);
 
@@ -1943,6 +1981,7 @@ tty_putstr(window, attr, str)
     register int i, j, n0;
     register int k;
 
+    HUPSKIP();
     /* Assume there's a real problem if the window is missing --
      * probably a panic message
      */
@@ -2251,6 +2290,7 @@ tty_add_menu(window, glyph, identifier, ch, gch, attr, str, preselected)
     const char *newstr;
     char buf[4+BUFSZ];
 
+    HUPSKIP();
     if (str == (const char*) 0)
 	return;
 
@@ -2453,6 +2493,7 @@ char let;
 int how;
 const char *mesg;
 {
+    HUPSKIP();
     /* "menu" without selection; use ordinary pline, no more() */
     if (how == PICK_NONE) {
 	pline("%s", mesg);
@@ -2488,12 +2529,14 @@ tty_update_inventory()
 void
 tty_mark_synch()
 {
+    HUPSKIP();
     (void) fflush(stdout);
 }
 
 void
 tty_wait_synch()
 {
+    HUPSKIP();
     /* we just need to make sure all windows are synch'd */
     if(!ttyDisplay || ttyDisplay->rawprint) {
 	getret();
@@ -2521,6 +2564,8 @@ docorner(xmin, ymax)
 {
     register int y;
     register struct WinDesc *cw = wins[WIN_MAP];
+
+    HUPSKIP();
 
 #if defined(SIGWINCH) && defined(CLIPPING)
     if(ymax > LI) ymax = LI;		/* can happen if window gets smaller */
@@ -2554,6 +2599,7 @@ docorner(xmin, ymax)
 void
 end_glyphout()
 {
+    HUPSKIP();
 #if defined(ASCIIGRAPH) && !defined(NO_TERMS)
     if (GFlag) {
 	GFlag = FALSE;
@@ -2575,6 +2621,7 @@ int in_ch;
 {
     register char ch = (char)in_ch;
 
+    HUPSKIP();
 # if defined(ASCIIGRAPH) && !defined(NO_TERMS)
     if (iflags.IBMgraphics || iflags.eight_bit_tty) {
 	/* IBM-compatible displays don't need other stuff */
@@ -2618,6 +2665,8 @@ int x, y;
 {
 	extern boolean restoring;
 	int oldx = clipx, oldy = clipy;
+
+	HUPSKIP();
 
 	if (!clipping) return;
 	if (x < clipx + 5) {
@@ -2664,6 +2713,7 @@ tty_print_glyph(window, x, y, glyph)
     int	    color;
     unsigned special;
     
+    HUPSKIP();
 #ifdef CLIPPING
     if(clipping) {
 #if 0
@@ -2731,6 +2781,7 @@ void
 tty_raw_print(str)
     const char *str;
 {
+    HUPSKIP();
     if(ttyDisplay) ttyDisplay->rawprint++;
 #if defined(MICRO) || defined(WIN32CON)
     msmsg("%s\n", str);
@@ -2743,6 +2794,7 @@ void
 tty_raw_print_bold(str)
     const char *str;
 {
+    HUPSKIP();
     if(ttyDisplay) ttyDisplay->rawprint++;
     term_start_raw_bold();
 #if defined(MICRO) || defined(WIN32CON)
@@ -2773,6 +2825,7 @@ tty_nhgetch()
     char nestbuf;
 #endif
 
+    HUPSKIP_RESULT('\033');
     (void) fflush(stdout);
     /* Note: if raw_print() and wait_synch() get called to report terminal
      * initialization problems, then wins[] and ttyDisplay might not be
@@ -2814,6 +2867,8 @@ tty_nh_poskey(x, y, mod)
 #endif
 # if defined(WIN32CON)
     int i;
+
+    HUPSKIP_RESULT('\033');
     (void) fflush(stdout);
     /* Note: if raw_print() and wait_synch() get called to report terminal
      * initialization problems, then wins[] and ttyDisplay might not be
