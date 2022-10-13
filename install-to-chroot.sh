@@ -18,8 +18,6 @@ NH_GIT="/home/build/SlashEM"
 # HACKDIR from include/config.h; aka nethack subdir inside chroot
 # Make a new one each time save compat is broken
 NHSUBDIR="slashem-0.0.8E0F2"
-#for combining xlogfile, etc on minor version bump
-#NH_LOG_SYMLINK_TARGET="/slashem-0.0.8E0F2/var"
 # END OF CONFIG
 ##############################################################################
 
@@ -68,10 +66,14 @@ if [ -n "$NETHACKBIN" -a -e "$NETHACKBIN" ]; then
 fi
 
 echo "Copying NetHack playground stuff"
+cp "$NETHACK_GIT/dat/license" "$NAO_CHROOT/$NHSUBDIR"
 cp "$NETHACK_GIT/dat/nhshare" "$NAO_CHROOT/$NHSUBDIR"
 cp "$NETHACK_GIT/dat/nhushare" "$NAO_CHROOT/$NHSUBDIR"
+cp "$NETHACK_GIT/doc/Guidebook.txt" "$NAO_CHROOT/$NHSUBDIR"
 chmod 644 "$NAO_CHROOT/$NHSUBDIR/nhshare"
 chmod 644 "$NAO_CHROOT/$NHSUBDIR/nhushare"
+chmod 644 "$NAO_CHROOT/$NHSUBDIR/license"
+chmod 644 "$NAO_CHROOT/$NHSUBDIR/Guidebook.txt"
 
 echo "Creating NetHack variable dir stuff."
 chown -R "$USRGRP" "$NAO_CHROOT/$NHSUBDIR"
