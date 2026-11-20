@@ -1867,6 +1867,10 @@ int prefixid;
 
 #define match_varname(INP,NAM,LEN) match_optname(INP, NAM, LEN, TRUE)
 
+#if defined(STATUS_COLORS) && defined(TEXTCOLOR)
+boolean parse_status_color_options(char *start);
+#endif
+
 /*ARGSUSED*/
 int
 parse_config_line(fp, buf, tmp_ramdisk, tmp_levels)
