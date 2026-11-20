@@ -59,6 +59,10 @@ STATIC_DCL void FDECL(set_botl_warn, (int));
 
 #if defined(STATUS_COLORS) && defined(TEXTCOLOR)
 
+#ifdef TTY_GRAPHICS
+#include "wintty.h"
+#endif
+
 extern const struct percent_color_option *hp_colors;
 extern const struct percent_color_option *pw_colors;
 extern const struct text_color_option *text_colors;
