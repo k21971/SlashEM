@@ -362,4 +362,8 @@ extern int repeat_hit;
 # define CFDECLSPEC
 #endif
  
+#ifdef AUTO_OPEN
+int doopen_indir(int x, int y);
+#endif
+
 #endif /* HACK_H */
