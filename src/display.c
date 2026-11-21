@@ -1406,11 +1406,11 @@ static char gbuf_stop[ROWNO];
 STATIC_PTR uchar get_glyph_char(glyph)
 int glyph;
 {
-    uchar   ch;
+    uchar   ch = '0';
     register int offset;
 
     if (glyph >= NO_GLYPH)
-        return ;
+        return ch;
 
     /*
      *  Map the glyph back to a character.
